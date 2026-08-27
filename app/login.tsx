@@ -98,6 +98,14 @@ export default function LoginScreen() {
           {loading ? "Logging in..." : "Login"}
         </Text>
       </Pressable>
+      <Pressable
+  onPress={() => router.push("/forgot-password")}
+  style={styles.forgotLink}
+>
+  <Text style={styles.forgotText}>
+    Forgot password?
+  </Text>
+</Pressable>
 
       <Pressable
         onPress={() => router.push("/register")}
@@ -171,6 +179,16 @@ const styles = StyleSheet.create({
   registerLink: {
     marginTop: 20,
   },
+  forgotLink: {
+  marginTop: 18,
+  alignItems: "center",
+},
+
+forgotText: {
+  color: "#8A6240",
+  fontWeight: "600",
+  fontSize: 14,
+},
 
   linkText: {
     textAlign: "center",

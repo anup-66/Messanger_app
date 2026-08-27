@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -32,21 +32,40 @@ type Message = {
 };
 
 export default function ChatScreen() {
-  const { conversationId, userName } =
-    useLocalSearchParams<{
-      conversationId: string;
-      userName: string;
-    }>();
+  const {
+    conversationId,
+    userName,
+  } = useLocalSearchParams<{
+    conversationId: string;
+    userName: string;
+  }>();
 
   const insets = useSafeAreaInsets();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(
+    []
+  );
+
   const [text, setText] = useState("");
+
   const [sending, setSending] = useState(false);
 
-  // Listen for real-time messages
+  /*
+   * Reference to the ScrollView.
+   *
+   * We use this to automatically move
+   * the chat to the newest message.
+   */
+  const scrollViewRef =
+    useRef<ScrollView>(null);
+
+  /*
+   * Listen for real-time messages.
+   */
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      return;
+    }
 
     const messagesRef = collection(
       db,
@@ -55,39 +74,97 @@ export default function ChatScreen() {
       "messages"
     );
 
-    const q = query(
+    const messagesQuery = query(
       messagesRef,
       orderBy("createdAt", "asc")
     );
 
     const unsubscribe = onSnapshot(
-      q,
+      messagesQuery,
       (snapshot) => {
         const loadedMessages: Message[] =
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...(doc.data() as Omit<Message, "id">),
+          snapshot.docs.map((messageDoc) => ({
+            id: messageDoc.id,
+            ...(messageDoc.data() as Omit<
+              Message,
+              "id"
+            >),
           }));
 
         setMessages(loadedMessages);
       },
       (error) => {
-        console.log("Messages error:", error);
+        console.log(
+          "Messages error:",
+          error
+        );
       }
     );
 
     return unsubscribe;
   }, [conversationId]);
 
-  // Send a message
-  const sendMessage = async () => {
-    const messageText = text.trim();
-
-    if (!messageText || !conversationId) {
+  /*
+   * Automatically scroll to the newest
+   * message whenever messages change.
+   */
+  useEffect(() => {
+    if (messages.length === 0) {
       return;
     }
 
-    const currentUser = auth.currentUser;
+    /*
+     * Small delay allows React Native to
+     * finish rendering the new message first.
+     */
+    const timeout = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({
+        animated: true,
+      });
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [messages]);
+
+  /*
+   * Format Firebase timestamp.
+   */
+  const formatMessageTime = (
+    timestamp: any
+  ) => {
+    if (!timestamp) {
+      return "";
+    }
+
+    try {
+      const date = timestamp.toDate
+        ? timestamp.toDate()
+        : new Date(timestamp);
+
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
+
+  /*
+   * Send message.
+   */
+  const sendMessage = async () => {
+    const messageText = text.trim();
+
+    if (
+      !messageText ||
+      !conversationId
+    ) {
+      return;
+    }
+
+    const currentUser =
+      auth.currentUser;
 
     if (!currentUser) {
       return;
@@ -96,7 +173,11 @@ export default function ChatScreen() {
     try {
       setSending(true);
 
-      // Add message
+      /*
+       * Add message to:
+       *
+       * conversations/{conversationId}/messages
+       */
       await addDoc(
         collection(
           db,
@@ -111,7 +192,9 @@ export default function ChatScreen() {
         }
       );
 
-      // Update conversation preview
+      /*
+       * Update conversation preview.
+       */
       await updateDoc(
         doc(
           db,
@@ -120,14 +203,19 @@ export default function ChatScreen() {
         ),
         {
           lastMessage: messageText,
-          lastMessageSenderId: currentUser.uid,
-          updatedAt: serverTimestamp(),
+          lastMessageSenderId:
+            currentUser.uid,
+          updatedAt:
+            serverTimestamp(),
         }
       );
 
       setText("");
     } catch (error) {
-      console.log("Send message error:", error);
+      console.log(
+        "Send message error:",
+        error
+      );
     } finally {
       setSending(false);
     }
@@ -135,25 +223,32 @@ export default function ChatScreen() {
 
   return (
     <View style={styles.screen}>
-
       {/* HEADER */}
+
       <View
         style={[
           styles.header,
           {
-            paddingTop: insets.top + 8,
+            paddingTop:
+              insets.top + 8,
           },
         ]}
       >
         <Pressable
-  onPress={() => router.replace("/")}
+          onPress={() =>
+            router.replace("/")
+          }
           style={styles.backButton}
           hitSlop={10}
         >
-          <Text style={styles.backText}>‹</Text>
+          <Text style={styles.backText}>
+            ‹
+          </Text>
         </Pressable>
 
-        <View style={styles.headerInfo}>
+        <View
+          style={styles.headerInfo}
+        >
           <Text
             style={styles.headerName}
             numberOfLines={1}
@@ -161,17 +256,22 @@ export default function ChatScreen() {
             {userName || "Chat"}
           </Text>
 
-          <Text style={styles.headerStatus}>
+          <Text
+            style={styles.headerStatus}
+          >
             Messages are private
           </Text>
         </View>
 
-        <Text style={styles.headerIcon}>
+        <Text
+          style={styles.headerIcon}
+        >
           🌻
         </Text>
       </View>
 
-      {/* CHAT AREA */}
+      {/* CHAT */}
+
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={
@@ -180,9 +280,10 @@ export default function ChatScreen() {
             : "height"
         }
       >
-
         {/* MESSAGES */}
+
         <ScrollView
+          ref={scrollViewRef}
           style={styles.messages}
           contentContainerStyle={[
             styles.messagesContent,
@@ -191,31 +292,34 @@ export default function ChatScreen() {
             },
           ]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={
+            false
+          }
         >
-
           {messages.length === 0 ? (
-
-            <View style={styles.emptyState}>
-
-              <Text style={styles.emptyIcon}>
+            <View
+              style={styles.emptyState}
+            >
+              <Text
+                style={styles.emptyIcon}
+              >
                 💬
               </Text>
 
-              <Text style={styles.emptyTitle}>
+              <Text
+                style={styles.emptyTitle}
+              >
                 Start your conversation
               </Text>
 
-              <Text style={styles.emptySubtitle}>
+              <Text
+                style={styles.emptySubtitle}
+              >
                 Send the first message ❤️
               </Text>
-
             </View>
-
           ) : (
-
             messages.map((message) => {
-
               const isMine =
                 message.senderId ===
                 auth.currentUser?.uid;
@@ -230,7 +334,6 @@ export default function ChatScreen() {
                       : styles.theirMessageRow,
                   ]}
                 >
-
                   <View
                     style={[
                       styles.messageBubble,
@@ -239,7 +342,6 @@ export default function ChatScreen() {
                         : styles.theirBubble,
                     ]}
                   >
-
                     <Text
                       style={[
                         styles.messageText,
@@ -251,17 +353,29 @@ export default function ChatScreen() {
                       {message.text}
                     </Text>
 
-                  </View>
+                    {/* TIMESTAMP */}
 
+                    <Text
+                      style={[
+                        styles.messageTime,
+                        isMine
+                          ? styles.myMessageTime
+                          : styles.theirMessageTime,
+                      ]}
+                    >
+                      {formatMessageTime(
+                        message.createdAt
+                      )}
+                    </Text>
+                  </View>
                 </View>
               );
             })
-
           )}
-
         </ScrollView>
 
         {/* INPUT AREA */}
+
         <View
           style={[
             styles.inputWrapper,
@@ -273,9 +387,9 @@ export default function ChatScreen() {
             },
           ]}
         >
-
-          <View style={styles.inputArea}>
-
+          <View
+            style={styles.inputArea}
+          >
             <TextInput
               style={styles.messageInput}
               placeholder="Type a message..."
@@ -284,6 +398,7 @@ export default function ChatScreen() {
               onChangeText={setText}
               multiline
               textAlignVertical="center"
+              editable={!sending}
             />
 
             <Pressable
@@ -295,41 +410,32 @@ export default function ChatScreen() {
               onPress={sendMessage}
               disabled={sending}
             >
-
               {sending ? (
-
                 <ActivityIndicator
                   color="#FFFFFF"
                 />
-
               ) : (
-
-                <Text style={styles.sendText}>
+                <Text
+                  style={styles.sendText}
+                >
                   ➤
                 </Text>
-
               )}
-
             </Pressable>
-
           </View>
-
         </View>
-
       </KeyboardAvoidingView>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   screen: {
     flex: 1,
     backgroundColor: "#FFF9F0",
   },
 
-  // HEADER
+  /* HEADER */
 
   header: {
     paddingHorizontal: 16,
@@ -377,13 +483,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 
-  // KEYBOARD
+  /* KEYBOARD */
 
   keyboardContainer: {
     flex: 1,
   },
 
-  // MESSAGES
+  /* MESSAGES */
 
   messages: {
     flex: 1,
@@ -420,7 +526,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  // MESSAGE BUBBLES
+  /* MESSAGE BUBBLES */
 
   messageRow: {
     width: "100%",
@@ -438,7 +544,8 @@ const styles = StyleSheet.create({
   messageBubble: {
     maxWidth: "78%",
     paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingTop: 11,
+    paddingBottom: 8,
     borderRadius: 18,
   },
 
@@ -467,7 +574,23 @@ const styles = StyleSheet.create({
     color: "#3A3025",
   },
 
-  // INPUT
+  /* MESSAGE TIME */
+
+  messageTime: {
+    fontSize: 10,
+    marginTop: 4,
+    alignSelf: "flex-end",
+  },
+
+  myMessageTime: {
+    color: "#D8CCC0",
+  },
+
+  theirMessageTime: {
+    color: "#9A8C7C",
+  },
+
+  /* INPUT */
 
   inputWrapper: {
     backgroundColor: "#FFFFFF",
@@ -514,5 +637,4 @@ const styles = StyleSheet.create({
   disabledButton: {
     opacity: 0.6,
   },
-
 });

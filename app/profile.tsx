@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -6,16 +6,16 @@ import {
   StyleSheet,
   Text,
   View,
-} from "react-native";
-import { router } from "expo-router";
-import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../services/firebase";
+} from 'react-native';
+import { router } from 'expo-router';
+import { signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 
 export default function ProfileScreen() {
   const user = auth.currentUser;
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,11 +26,7 @@ export default function ProfileScreen() {
       }
 
       try {
-        const userRef = doc(
-          db,
-          "users",
-          user.uid
-        );
+        const userRef = doc(db, 'users', user.uid);
 
         const userSnapshot = await getDoc(userRef);
 
@@ -41,27 +37,16 @@ export default function ProfileScreen() {
             data.name ||
               data.displayName ||
               user.displayName ||
-              user.email?.split("@")[0] ||
-              "User"
+              user.email?.split('@')[0] ||
+              'User',
           );
         } else {
-          setName(
-            user.displayName ||
-              user.email?.split("@")[0] ||
-              "User"
-          );
+          setName(user.displayName || user.email?.split('@')[0] || 'User');
         }
       } catch (error) {
-        console.log(
-          "Profile loading error:",
-          error
-        );
+        console.log('Profile loading error:', error);
 
-        setName(
-          user.displayName ||
-            user.email?.split("@")[0] ||
-            "User"
-        );
+        setName(user.displayName || user.email?.split('@')[0] || 'User');
       } finally {
         setLoading(false);
       }
@@ -71,44 +56,34 @@ export default function ProfileScreen() {
   }, [user]);
 
   const handleLogout = () => {
-    Alert.alert(
-      "Log out",
-      "Are you sure you want to log out?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Log out",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await signOut(auth);
-            } catch (error) {
-              console.log(
-                "Logout error:",
-                error
-              );
+    Alert.alert('Log out', 'Are you sure you want to log out?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signOut(auth);
+          } catch (error) {
+            console.log('Logout error:', error);
 
-              Alert.alert(
-                "Logout failed",
-                "Something went wrong. Please try again."
-              );
-            }
-          },
+            Alert.alert(
+              'Logout failed',
+              'Something went wrong. Please try again.',
+            );
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator
-          size="large"
-          color="#3A3025"
-        />
+        <ActivityIndicator size='large' color='#3A3025' />
       </View>
     );
   }
@@ -117,83 +92,62 @@ export default function ProfileScreen() {
     return null;
   }
 
-  const displayName =
-    name || "User";
+  const displayName = name || 'User';
 
-  const initial =
-    displayName
-      .charAt(0)
-      .toUpperCase();
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <View style={styles.container}>
-
       {/* HEADER */}
 
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => router.replace("/")}
+          onPress={() => router.replace('/')}
         >
-          <Text style={styles.backText}>
-            ‹
-          </Text>
+          <Text style={styles.backText}>‹</Text>
         </Pressable>
 
-        <Text style={styles.headerTitle}>
-          Profile
-        </Text>
+        <Text style={styles.headerTitle}>Profile</Text>
 
-        <View style={styles.headerSpacer} />
+        <Pressable
+          style={styles.editButton}
+          onPress={() => router.push('/edit-profile')}
+        >
+          <Text style={styles.editButtonText}>Edit</Text>
+        </Pressable>
       </View>
 
       {/* PROFILE */}
 
       <View style={styles.profileSection}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {initial}
-          </Text>
+          <Text style={styles.avatarText}>{initial}</Text>
         </View>
 
-        <Text style={styles.name}>
-          {displayName}
-        </Text>
+        <Text style={styles.name}>{displayName}</Text>
 
-        <Text style={styles.email}>
-          {user.email}
-        </Text>
+        <Text style={styles.email}>{user.email}</Text>
       </View>
 
       {/* ACCOUNT */}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Account
-        </Text>
+        <Text style={styles.sectionTitle}>Account</Text>
 
         <View style={styles.infoCard}>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Name
-            </Text>
+            <Text style={styles.infoLabel}>Name</Text>
 
-            <Text style={styles.infoValue}>
-              {displayName}
-            </Text>
+            <Text style={styles.infoValue}>{displayName}</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Email
-            </Text>
+            <Text style={styles.infoLabel}>Email</Text>
 
-            <Text
-              style={styles.infoValue}
-              numberOfLines={1}
-            >
+            <Text style={styles.infoValue} numberOfLines={1}>
               {user.email}
             </Text>
           </View>
@@ -202,22 +156,13 @@ export default function ProfileScreen() {
 
       {/* LOGOUT */}
 
-      <Pressable
-        style={styles.logoutButton}
-        onPress={handleLogout}
-      >
-        <Text style={styles.logoutIcon}>
-          🚪
-        </Text>
+      <Pressable style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutIcon}>🚪</Text>
 
-        <Text style={styles.logoutText}>
-          Log out
-        </Text>
+        <Text style={styles.logoutText}>Log out</Text>
       </Pressable>
 
-      <Text style={styles.footer}>
-        Messenger 🌻
-      </Text>
+      <Text style={styles.footer}>Messenger 🌻</Text>
     </View>
   );
 }
@@ -225,47 +170,59 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF9F0",
+    backgroundColor: '#FFF9F0',
   },
 
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#FFF9F0",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF9F0',
   },
 
   header: {
     paddingTop: 58,
     paddingHorizontal: 18,
     paddingBottom: 15,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: "#E4D8C8",
-    flexDirection: "row",
-    alignItems: "center",
+    borderBottomColor: '#E4D8C8',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   backButton: {
     width: 42,
     height: 42,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editButton: {
+    width: 50,
+    height: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  editButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#8A6240',
   },
 
   backText: {
     fontSize: 38,
     lineHeight: 38,
-    color: "#3A3025",
-    fontWeight: "300",
+    color: '#3A3025',
+    fontWeight: '300',
   },
 
   headerTitle: {
     flex: 1,
-    textAlign: "center",
+    textAlign: 'center',
     fontSize: 20,
-    fontWeight: "700",
-    color: "#3A3025",
+    fontWeight: '700',
+    color: '#3A3025',
   },
 
   headerSpacer: {
@@ -273,7 +230,7 @@ const styles = StyleSheet.create({
   },
 
   profileSection: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingTop: 35,
     paddingBottom: 30,
   },
@@ -282,28 +239,28 @@ const styles = StyleSheet.create({
     width: 95,
     height: 95,
     borderRadius: 48,
-    backgroundColor: "#F1DFC5",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#F1DFC5',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   avatarText: {
     fontSize: 38,
-    fontWeight: "700",
-    color: "#3A3025",
+    fontWeight: '700',
+    color: '#3A3025',
   },
 
   name: {
     marginTop: 15,
     fontSize: 25,
-    fontWeight: "700",
-    color: "#3A3025",
+    fontWeight: '700',
+    color: '#3A3025',
   },
 
   email: {
     marginTop: 5,
     fontSize: 14,
-    color: "#7A6A58",
+    color: '#7A6A58',
   },
 
   section: {
@@ -312,44 +269,44 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#3A3025",
+    fontWeight: '700',
+    color: '#3A3025',
     marginBottom: 10,
   },
 
   infoCard: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderRadius: 17,
     borderWidth: 1,
-    borderColor: "#EDE2D3",
-    overflow: "hidden",
+    borderColor: '#EDE2D3',
+    overflow: 'hidden',
   },
 
   infoRow: {
     minHeight: 60,
     paddingHorizontal: 17,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
   infoLabel: {
     fontSize: 14,
-    color: "#8A7A68",
+    color: '#8A7A68',
   },
 
   infoValue: {
     flex: 1,
-    textAlign: "right",
+    textAlign: 'right',
     marginLeft: 20,
     fontSize: 15,
-    fontWeight: "600",
-    color: "#3A3025",
+    fontWeight: '600',
+    color: '#3A3025',
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#EDE2D3",
+    backgroundColor: '#EDE2D3',
   },
 
   logoutButton: {
@@ -357,12 +314,12 @@ const styles = StyleSheet.create({
     marginTop: 30,
     height: 54,
     borderRadius: 27,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: "#E4D8C8",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    borderColor: '#E4D8C8',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   logoutIcon: {
@@ -372,16 +329,16 @@ const styles = StyleSheet.create({
 
   logoutText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#8A6240",
+    fontWeight: '700',
+    color: '#8A6240',
   },
 
   footer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 25,
-    width: "100%",
-    textAlign: "center",
+    width: '100%',
+    textAlign: 'center',
     fontSize: 13,
-    color: "#A49482",
+    color: '#A49482',
   },
 });
